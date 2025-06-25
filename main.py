@@ -3,11 +3,10 @@ import tempfile
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from gtts import gTTS
-import openai
+from openai import OpenAI
 
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
 
 def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("👋 Hi! Send me any English message and I will reply with a voice response.")
@@ -15,17 +14,15 @@ def start(update: Update, context: CallbackContext) -> None:
 def handle_text(update: Update, context: CallbackContext) -> None:
     user_message = update.message.text
 
-    # Отправка текста в OpenAI
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a friendly English-speaking assistant."},
             {"role": "user", "content": user_message}
         ]
     )
-    reply = response['choices'][0]['message']['content']
+    reply = response.choices[0].message.content
 
-    # Преобразуем ответ в речь
     tts = gTTS(text=reply, lang='en')
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as tf:
         tts.save(tf.name)
